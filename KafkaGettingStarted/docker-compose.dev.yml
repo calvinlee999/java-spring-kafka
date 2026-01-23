@@ -1,0 +1,45 @@
+# Development Override for Kafka Learning
+# Usage: docker-compose -f kafka-single-node.yml -f docker-compose.dev.yml up
+
+version: '3.8'
+
+services:
+  kafka:
+    environment:
+      # Development-specific settings
+      - KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE=true   # Allow auto-creation in dev
+      - KAFKA_CFG_LOG_RETENTION_HOURS=24           # Shorter retention for dev
+      - KAFKA_CFG_NUM_PARTITIONS=3                 # Fewer partitions for dev
+      - KAFKA_HEAP_OPTS=-Xmx1G -Xms1G             # Less memory for dev
+      - KAFKA_CFG_LOG_LEVEL=INFO                   # More verbose logging
+    
+    # Enable all ports for development
+    ports:
+      - '9092:9092'
+      - '9093:9093'
+      - '29092:29092'  # Internal port for debugging
+    
+    # Override resource limits for development
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 1.5G
+
+  kafka-ui:
+    environment:
+      # Development UI settings
+      - DYNAMIC_CONFIG_ENABLED=true
+      - KAFKA_CLUSTERS_0_NAME=local-kafka-learning
+      - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka:29092
+      - KAFKA_CLUSTERS_0_PROPERTIES_SECURITY_PROTOCOL=PLAINTEXT
+      - LOGGING_LEVEL_ROOT=DEBUG
+      - LOGGING_LEVEL_COM_PROVECTUS=DEBUG
+      - KAFKA_CLUSTERS_0_AUDIT_TOPIC_ENABLED=true
+      - KAFKA_CLUSTERS_0_AUDIT_CONSUMER_ENABLED=true
+
+# Development-specific volumes for easier access
+volumes:
+  kafka_data:
+    driver: local
+    # Use named volume in development for easier cleanup

@@ -1,0 +1,208 @@
+# KAFKA CLUSTER CONFIGURATION FILE
+# 
+# This file sets up 3 Kafka servers working together as a team!
+# Think of it like creating a group project where everyone has a specific job
+# but they all work together to achieve the same goal.
+#
+# What you'll learn:
+# - How to run multiple Kafka servers (called "brokers")
+# - How they communicate with each other
+# - How to make your system fault-tolerant (keeps working even if one server fails)
+
+version: '3'
+services:
+
+  # KAFKA SERVER #1 (The First Team Member)
+  # This server acts as both a "broker" (handles messages) and a "controller" (makes decisions)
+  # Think of it as a team leader who both does work AND coordinates the team
+  kafka-1:
+    # Using a specific version to ensure everyone gets the same setup
+    image: 'bitnami/kafka:3.6.1'
+    container_name: kafka-1
+    
+    environment:
+      # Enable KRaft mode (newer, simpler way to run Kafka - no need for Zookeeper!)
+      # KRaft is like having the team manage itself instead of needing a separate manager
+      - KAFKA_ENABLE_KRAFT=yes
+      
+      # Allow simple connections (no security for learning purposes)
+      # In real life, you'd add password protection!
+      - ALLOW_PLAINTEXT_LISTENER=yes
+      
+      # Give this server a unique ID number (like a student ID)
+      - KAFKA_CFG_NODE_ID=1001
+      
+      # Cluster ID - like a group project name that all team members share
+      # All servers in the cluster must have the same cluster ID
+      - KAFKA_KRAFT_CLUSTER_ID=OTMwNzFhYTY1ODNiNGE5OT
+
+      # This server can both handle messages AND make cluster decisions
+      # "broker" = handles client requests and stores messages
+      # "controller" = makes decisions about who's in charge of what
+      - KAFKA_CFG_PROCESS_ROLES=broker,controller
+      
+      # Set up the "controller" communication channel
+      # Controllers talk to each other on this special channel
+      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      
+      # Define how different types of connections work (all using simple text for learning)
+      # CLIENT = regular applications connecting to Kafka
+      # CONTROLLER = Kafka servers talking to each other for coordination
+      # INTERNAL = Kafka servers talking to each other for data
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CLIENT:PLAINTEXT,CONTROLLER:PLAINTEXT,INTERNAL:PLAINTEXT
+      
+      # List of all servers that can make cluster decisions (the "voting committee")
+      # Format: serverID@hostname:port
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=1001@kafka-1:29092,1002@kafka-2:29093
+
+      # Tell clients how to connect to this server
+      # CLIENT://localhost:9092 = how your Java app connects
+      # INTERNAL://kafka-1:19092 = how other Kafka servers connect
+      - KAFKA_CFG_ADVERTISED_LISTENERS=CLIENT://localhost:9092,INTERNAL://kafka-1:19092
+      
+      # Define what ports this server listens on
+      # :9092 = port for client applications (your Java code)
+      # kafka-1:29092 = port for controller communication
+      # :19092 = port for internal Kafka-to-Kafka communication
+      - KAFKA_CFG_LISTENERS=CLIENT://:9092,CONTROLLER://kafka-1:29092,INTERNAL://:19092
+      
+      # When Kafka servers talk to each other, use the INTERNAL channel
+      - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=INTERNAL
+
+    ports:
+      # Map container port to your computer's port
+      # Your Java application will connect to localhost:9092
+      - "9092:9092"
+     
+  # KAFKA SERVER #2 (The Second Team Member)
+  # Very similar to kafka-1, but with different ports and ID
+  kafka-2:
+    image: 'bitnami/kafka:3.6.1'
+    container_name: kafka-2
+    
+    environment:
+      - KAFKA_ENABLE_KRAFT=yes
+      - ALLOW_PLAINTEXT_LISTENER=yes
+      
+      # Different server ID (each server needs a unique number)
+      - KAFKA_CFG_NODE_ID=1002
+      
+      # Same cluster ID (all servers in the team share this)
+      - KAFKA_KRAFT_CLUSTER_ID=OTMwNzFhYTY1ODNiNGE5OT
+
+      # This server is also both broker and controller
+      - KAFKA_CFG_PROCESS_ROLES=broker,controller
+      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CLIENT:PLAINTEXT,CONTROLLER:PLAINTEXT,INTERNAL:PLAINTEXT
+      
+      # Same voting committee as kafka-1 (they coordinate together)
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=1001@kafka-1:29092,1002@kafka-2:29093
+
+      # Different ports to avoid conflicts
+      # Clients can connect to this server via localhost:9093
+      - KAFKA_CFG_ADVERTISED_LISTENERS=CLIENT://localhost:9093,INTERNAL://kafka-2:19093
+      - KAFKA_CFG_LISTENERS=CLIENT://:9093,CONTROLLER://kafka-2:29093,INTERNAL://:19093
+      - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=INTERNAL
+
+    ports:
+      # Different port for client connections
+      - "9093:9093"
+     
+  # KAFKA SERVER #3 (The Third Team Member)
+  # This one is ONLY a broker (not a controller)
+  # Think of it as a team member who does work but doesn't make decisions
+  kafka-3:
+    image: 'bitnami/kafka:3.6.1'
+    container_name: kafka-3
+    
+    environment:
+      - KAFKA_ENABLE_KRAFT=yes
+      - ALLOW_PLAINTEXT_LISTENER=yes
+      
+      # Another unique server ID
+      - KAFKA_CFG_NODE_ID=1003
+      
+      # Same cluster ID (part of the same team)
+      - KAFKA_KRAFT_CLUSTER_ID=OTMwNzFhYTY1ODNiNGE5OT
+
+      # This server is ONLY a broker (no controller role)
+      # It handles messages but doesn't participate in cluster decisions
+      - KAFKA_CFG_PROCESS_ROLES=broker
+      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CLIENT:PLAINTEXT,CONTROLLER:PLAINTEXT,INTERNAL:PLAINTEXT
+      
+      # Points to the two controller servers for decisions
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=1001@kafka-1:29092,1002@kafka-2:29093
+
+      # Client connection via localhost:9094
+      - KAFKA_CFG_ADVERTISED_LISTENERS=CLIENT://localhost:9094,INTERNAL://kafka-3:19094
+      - KAFKA_CFG_LISTENERS=CLIENT://:9094,INTERNAL://:19094
+      - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=INTERNAL
+     
+    ports:
+      # Another different port for client connections
+      - "9094:9094"
+     
+    # This server waits for the other two to start first
+    # Like joining a group project after the leaders have set things up
+    depends_on:
+      - "kafka-1"
+      - "kafka-2"
+
+  # KAFDROP - WEB INTERFACE FOR KAFKA
+  # This is like a web dashboard where you can see what's happening in your Kafka cluster
+  # Think of it as a "control tower" where you can monitor air traffic (your messages)
+  kafdrop:
+    # Using a snapshot version (latest development version)
+    image: 'obsidiandynamics/kafdrop:3.32.0-SNAPSHOT'
+    
+    # Don't automatically restart if it crashes (just for learning)
+    restart: "no"
+    
+    ports:
+      # Access the web interface at http://localhost:9000
+      - 9000:9000
+    
+    environment:
+      # Tell Kafdrop how to connect to all three Kafka servers
+      # It connects using the internal network addresses
+      - KAFKA_BROKERCONNECT=kafka-1:19092,kafka-2:19093,kafka-3:19094
+      
+      # Memory settings for the Java application
+      # -Xms32M = start with 32MB of memory
+      # -Xmx64M = maximum 64MB of memory (keeps it lightweight)
+      - JVM_OPTS=-Xms32M -Xmx64M
+      
+      # Web server path configuration (access directly via the root URL)
+      - SERVER_SERVLET_CONTEXTPATH=/
+    
+    container_name: kafdrop
+    
+    # Wait for all Kafka servers to start before starting the web interface
+    depends_on:
+      - "kafka-1"
+      - "kafka-2"
+      - "kafka-3"
+
+# WHAT HAPPENS WHEN YOU RUN THIS?
+# 
+# 1. Three Kafka servers start up and form a cluster
+# 2. kafka-1 and kafka-2 can make cluster decisions (controllers)
+# 3. kafka-3 just handles messages (broker only)
+# 4. All three servers can store and serve your messages
+# 5. Kafdrop starts and gives you a web interface to monitor everything
+#
+# HOW TO USE:
+# 1. Run: docker-compose -f kafka-cluster.yml up -d
+# 2. Check status: docker ps
+# 3. View web interface: http://localhost:9000
+# 4. Connect your Java app to any of: localhost:9092, localhost:9093, localhost:9094
+# 5. Stop everything: docker-compose -f kafka-cluster.yml down
+#
+# WHY THREE SERVERS?
+# - Fault tolerance: if one server crashes, the others keep working
+# - Load distribution: messages can be spread across multiple servers
+# - High availability: your system stays online even during maintenance
+#
+# This setup simulates what companies like Netflix or Uber use in production,
+# just on a smaller scale for learning!

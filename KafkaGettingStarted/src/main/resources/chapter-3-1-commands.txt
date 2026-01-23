@@ -1,0 +1,141 @@
+
+/*******************************************************************
+    CHAPTER 3-1: SETTING UP A MULTI-NODE KAFKA CLUSTER
+    
+    This file teaches you how to run multiple Kafka servers (called "brokers")
+    working together as a team. Think of it like having multiple cashiers
+    at a grocery store instead of just one - it makes everything faster and
+    more reliable!
+********************************************************************/
+
+/*******************************************************************
+                STEP 1: SETTING UP THE KAFKA CLUSTER
+********************************************************************/
+
+# What is a Kafka Cluster?
+# A cluster is like a team of Kafka servers working together. If one server
+# goes down, the others can still handle the work. This makes your system
+# much more reliable!
+
+# STEP 1: Make sure Docker is installed
+# Docker is like a container that holds our Kafka servers
+# If you don't have it, download from: https://www.docker.com/products/docker-desktop
+
+# STEP 2: Open your command line
+# - Windows users: Open PowerShell (search for it in Start menu)
+# - Mac/Linux users: Open Terminal (look for it in Applications)
+
+# STEP 3: Navigate to the project folder
+# Use the "cd" command to go to where you downloaded these files
+# The folder should contain the "kafka-cluster.yml" file
+
+# STEP 4: Start the Kafka cluster (3 servers working together!)
+# This command tells Docker to start 3 Kafka servers from the configuration file
+docker-compose -f kafka-cluster.yml up -d
+
+# What does this command do?
+# - "docker-compose": The tool that manages multiple containers
+# - "-f kafka-cluster.yml": Use this specific configuration file
+# - "up": Start all the services
+# - "-d": Run in the background (detached mode)
+
+# STEP 5: Check if all servers are running
+# This shows you all the running containers (like checking if all cashiers are at work)
+docker ps
+
+# You should see 4 containers running:
+# - kafka-1, kafka-2, kafka-3 (the three Kafka servers)
+# - kafdrop (a web interface to see what's happening)
+
+# STEP 6: When you're done, shut everything down
+# This stops all the servers and cleans up
+docker-compose -f kafka-cluster.yml down
+
+/*******************************************************************
+                STEP 2: CREATING TOPICS IN THE CLUSTER
+********************************************************************/
+
+# What are Topics?
+# Topics are like different channels on TV. Each topic holds messages
+# about a specific subject (like "orders" or "tweets")
+
+# What are Partitions?
+# Partitions split a topic into smaller pieces, like having multiple
+# lanes on a highway. More partitions = more messages can flow at once!
+
+# What are Replicas?
+# Replicas are copies of your data stored on different servers.
+# If one server crashes, you still have your data on the other servers!
+
+# EXERCISE 1: Create a topic for online orders
+# This creates a topic with:
+# - 3 partitions (3 lanes for messages)
+# - 2 replicas (2 backup copies of each message)
+./kafka-topics.sh \
+    --bootstrap-server localhost:9092 \
+    --create \
+    --topic kafka.learning.orders \
+    --partitions 3 \
+    --replication-factor 2
+
+# EXERCISE 2: Create a topic for social media tweets
+# This creates a topic with:
+# - 4 partitions (4 lanes for messages - more than orders because tweets are faster!)
+# - 3 replicas (3 backup copies - extra safety for important social data)
+./kafka-topics.sh \
+    --bootstrap-server localhost:9092 \
+    --create \
+    --topic kafka.learning.tweets \
+    --partitions 4 \
+    --replication-factor 3
+
+/*******************************************************************
+                STEP 3: TESTING CLUSTER RESILIENCY
+                (What happens when a server crashes?)
+********************************************************************/
+
+# Resiliency means your system keeps working even when parts break down
+# Let's test this by intentionally breaking one server and seeing what happens!
+
+# STEP 1: Connect to one of the Kafka servers
+# This is like walking into the server room and using one of the computers directly
+docker exec -it kafka-3 /bin/bash
+
+# STEP 2: Check which server is the "controller"
+# The controller is like the manager of the Kafka team - it coordinates everything
+./kafka-metadata-quorum.sh \
+    --bootstrap-server localhost:19094 \
+    describe --status
+
+# What you'll see:
+# - Current leader: Shows which server is in charge
+# - Voter information: Shows all servers participating in decisions
+
+# STEP 3: Simulate a server crash
+# Replace <broker-name> with kafka-1, kafka-2, or kafka-3
+# This is like unplugging one of the servers
+docker container stop <broker-name>
+
+# Now check your topics - they should still work because the other servers take over!
+
+# STEP 4: Bring the server back online
+# This is like plugging the server back in
+docker container start <broker-name>
+
+# The server will automatically rejoin the cluster and catch up on any missed messages!
+
+/*******************************************************************
+                WHAT YOU LEARNED:
+********************************************************************/
+
+# 1. How to run multiple Kafka servers working together (clustering)
+# 2. Why partitions and replicas make your system faster and safer
+# 3. How Kafka automatically handles server failures (resiliency)
+# 4. How to test your system by simulating problems
+
+# REMEMBER: In production (real-world use), you'd never intentionally
+# crash servers like this. But testing helps you understand how
+# your system behaves when real problems happen!
+
+
+

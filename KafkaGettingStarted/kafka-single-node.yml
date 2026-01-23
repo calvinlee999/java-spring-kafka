@@ -1,0 +1,173 @@
+services:
+  # Kafka Service using KRaft (without Zookeeper) - Industry Best Practices
+  kafka:
+    image: 'bitnami/kafka:3.6.1'  # Using specific version for reproducibility
+    container_name: kafka-learning-broker
+    hostname: kafka
+    restart: unless-stopped
+    
+    # Resource limits based on your Docker Desktop configuration (8 CPUs, 7.6GB RAM)
+    deploy:
+      resources:
+        limits:
+          cpus: '4.0'      # Use half of available CPUs for Kafka
+          memory: 2G       # Allocate 2GB for container
+        reservations:
+          cpus: '2.0'      # Reserve minimum CPUs
+          memory: 1G       # Reserve minimum memory
+    
+    environment:
+      # KRaft Configuration (Industry Standard)
+      - KAFKA_ENABLE_KRAFT=yes
+      - ALLOW_PLAINTEXT_LISTENER=yes
+      - KAFKA_CFG_NODE_ID=1
+      - KAFKA_CFG_PROCESS_ROLES=broker,controller
+      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=INTERNAL
+      
+      # Listener Configuration (Security Best Practice)
+      - KAFKA_CFG_LISTENERS=INTERNAL://:29092,EXTERNAL://:9092,CONTROLLER://:9093
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
+      - KAFKA_CFG_ADVERTISED_LISTENERS=INTERNAL://kafka:29092,EXTERNAL://localhost:9092
+      
+      # Controller Configuration
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=1@kafka:9093
+      
+      # Topic Configuration (Production-like defaults)
+      - KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE=false  # Best practice: explicit topic creation
+      - KAFKA_CFG_DEFAULT_REPLICATION_FACTOR=1     # Single node setup
+      - KAFKA_CFG_NUM_PARTITIONS=6                 # Better parallelism (2x CPU cores for learning)
+      - KAFKA_CFG_MIN_INSYNC_REPLICAS=1            # For single node
+      
+      # Performance Tuning (Based on your 8-core system)
+      - KAFKA_CFG_NUM_NETWORK_THREADS=8            # Match your CPU cores
+      - KAFKA_CFG_NUM_IO_THREADS=16                # 2x network threads
+      - KAFKA_CFG_SOCKET_SEND_BUFFER_BYTES=102400  # 100KB
+      - KAFKA_CFG_SOCKET_RECEIVE_BUFFER_BYTES=102400 # 100KB
+      - KAFKA_CFG_SOCKET_REQUEST_MAX_BYTES=104857600 # 100MB
+      
+      # Log Configuration (Learning/Development Optimized)
+      - KAFKA_CFG_LOG_RETENTION_HOURS=168          # 7 days retention
+      - KAFKA_CFG_LOG_RETENTION_BYTES=1073741824   # 1GB per topic-partition
+      - KAFKA_CFG_LOG_SEGMENT_BYTES=268435456      # 256MB segments (more manageable)
+      - KAFKA_CFG_LOG_CLEANUP_POLICY=delete
+      - KAFKA_CFG_LOG_CLEANUP_INTERVAL_MS=300000   # 5 minutes
+      - KAFKA_CFG_LOG_RETENTION_CHECK_INTERVAL_MS=300000 # 5 minutes
+      
+      # Compression (Industry Best Practice)
+      - KAFKA_CFG_COMPRESSION_TYPE=snappy          # Good balance of speed/compression
+      
+      # JVM Settings (Optimized for your 7.6GB system)
+      - KAFKA_HEAP_OPTS=-Xmx1536M -Xms1536M -XX:+UseG1GC -XX:MaxGCPauseMillis=100
+      - KAFKA_JVM_PERFORMANCE_OPTS=-server -XX:+UnlockExperimentalVMOptions -XX:+UseContainerSupport
+    
+    ports:
+      - '9092:9092'  # External listener for Spring Boot app
+      - '9093:9093'  # Controller port (for management tools)
+    
+    volumes:
+      - kafka_data:/bitnami/kafka
+    
+    # Enhanced healthcheck with proper timeout
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-topics.sh --bootstrap-server localhost:9092 --list || exit 1"]
+      interval: 30s
+      timeout: 15s       # Increased timeout for reliability
+      retries: 5
+      start_period: 45s  # More time for Kafka to start up
+    
+    # Logging configuration for better debugging
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "3"
+
+  # Kafka UI for easier management (Industry Standard Management Tool)
+  kafka-ui:
+    image: provectuslabs/kafka-ui:v0.7.2  # Use specific version
+    container_name: kafka-learning-ui
+    hostname: kafka-ui
+    restart: unless-stopped
+    
+    # Resource limits for UI service
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.5'
+          memory: 256M
+    
+    ports:
+      - '8081:8080'
+    
+    environment:
+      - DYNAMIC_CONFIG_ENABLED=true        # Allow dynamic config changes
+      - KAFKA_CLUSTERS_0_NAME=local-kafka-learning
+      - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka:29092
+      - KAFKA_CLUSTERS_0_PROPERTIES_SECURITY_PROTOCOL=PLAINTEXT
+      - LOGGING_LEVEL_COM_PROVECTUS=DEBUG  # Better logging for troubleshooting
+      - SERVER_SERVLET_CONTEXT_PATH=/      # Root path for UI
+    
+    depends_on:
+      kafka:
+        condition: service_healthy
+    
+    # Logging configuration
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "2"
+    
+    profiles:
+      - ui
+
+  # Kafka Exporter for Monitoring (Optional - Industry Best Practice)
+  kafka-exporter:
+    image: danielqsj/kafka-exporter:v1.7.0
+    container_name: kafka-learning-exporter
+    hostname: kafka-exporter
+    restart: unless-stopped
+    
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+    
+    ports:
+      - '9308:9308'  # Prometheus metrics endpoint
+    
+    command:
+      - '--kafka.server=kafka:29092'
+      - '--web.listen-address=0.0.0.0:9308'
+      - '--log.level=info'
+    
+    depends_on:
+      kafka:
+        condition: service_healthy
+    
+    profiles:
+      - monitoring
+
+volumes:
+  kafka_data:
+    driver: local
+    name: kafka-learning-data
+    # For development - use named volume for easier management
+    # driver_opts:
+    #   type: none
+    #   o: bind
+    #   device: ./docker-volumes/kafka-data
+
+networks:
+  default:
+    name: kafka-learning-network
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16  # Dedicated subnet for isolation
+    

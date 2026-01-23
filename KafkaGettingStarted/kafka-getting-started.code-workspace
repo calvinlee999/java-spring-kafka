@@ -1,0 +1,254 @@
+{
+    "folders": [
+        {
+            "name": "Kafka Getting Started",
+            "path": "."
+        }
+    ],
+    "settings": {
+        "java.project.sourcePaths": [
+            "src/main/java"
+        ],
+        "java.project.outputPath": "target/classes",
+        "java.project.referencedLibraries": [],
+        "java.compile.nullAnalysis.mode": "automatic",
+        "java.debug.settings.enableRunDebugCodeLens": true,
+        "java.debug.settings.hotCodeReplace": "auto",
+        "java.maven.downloadSources": true,
+        "java.maven.downloadJavadoc": true,
+        "java.sources.organizeImports.starThreshold": 99,
+        "java.sources.organizeImports.staticStarThreshold": 99,
+        "java.format.enabled": true,
+        "java.saveActions.organizeImports": true,
+        "files.exclude": {
+            "**/target": true,
+            "**/.classpath": true,
+            "**/.project": true,
+            "**/.settings": true,
+            "**/.factorypath": true,
+            "**/.metals": true,
+            "**/.bloop": true,
+            "**/project/target": true,
+            "**/project/project": true
+        },
+        "java.test.config": [
+            {
+                "name": "kafka-getting-started",
+                "workingDirectory": "${workspaceFolder}",
+                "args": [],
+                "vmargs": [],
+                "env": {},
+                "preLaunchTask": "",
+                "postDebugTask": ""
+            }
+        ],
+        "spring-boot.ls.problem.application-properties.enabled": true,
+        "spring-boot.ls.problem.application-yaml.enabled": true,
+        "yaml.schemas": {
+            "https://json.schemastore.org/github-workflow.json": "/.github/workflows/*",
+            "https://json.schemastore.org/docker-compose.yml": ["/docker-compose.yml", "/kafka-single-node.yml"]
+        },
+        "files.associations": {
+            "*.yml": "yaml",
+            "*.yaml": "yaml",
+            "application*.properties": "spring-boot-properties",
+            "application*.yml": "spring-boot-properties-yaml",
+            "application*.yaml": "spring-boot-properties-yaml"
+        },
+        "java.configuration.updateBuildConfiguration": "automatic"
+    },
+    "extensions": {
+        "recommendations": [
+            "vscjava.vscode-java-pack",
+            "vscjava.vscode-spring-boot-dashboard",
+            "pivotal.vscode-spring-boot",
+            "vscjava.vscode-maven",
+            "redhat.java",
+            "vscjava.vscode-java-debug",
+            "vscjava.vscode-java-test",
+            "vscjava.vscode-java-dependency",
+            "ms-vscode.vscode-yaml",
+            "ms-vscode-remote.remote-containers",
+            "ms-azuretools.vscode-docker",
+            "gabrielbb.vscode-lombok",
+            "sonarsource.sonarlint-vscode"
+        ]
+    },
+    "tasks": {
+        "version": "2.0.0",
+        "tasks": [
+            {
+                "label": "Maven: Clean",
+                "type": "shell",
+                "command": "mvn clean",
+                "group": "build",
+                "presentation": {
+                    "echo": true,
+                    "reveal": "always",
+                    "focus": false,
+                    "panel": "shared"
+                },
+                "problemMatcher": []
+            },
+            {
+                "label": "Maven: Compile",
+                "type": "shell",
+                "command": "mvn compile",
+                "group": "build",
+                "presentation": {
+                    "echo": true,
+                    "reveal": "always",
+                    "focus": false,
+                    "panel": "shared"
+                },
+                "problemMatcher": ["$tsc"]
+            },
+            {
+                "label": "Maven: Test",
+                "type": "shell",
+                "command": "mvn test",
+                "group": "test",
+                "presentation": {
+                    "echo": true,
+                    "reveal": "always",
+                    "focus": false,
+                    "panel": "shared"
+                },
+                "problemMatcher": []
+            },
+            {
+                "label": "Spring Boot: Run",
+                "type": "shell",
+                "command": "mvn spring-boot:run",
+                "group": "build",
+                "presentation": {
+                    "echo": true,
+                    "reveal": "always",
+                    "focus": false,
+                    "panel": "shared"
+                },
+                "isBackground": true,
+                "problemMatcher": [
+                    {
+                        "pattern": [
+                            {
+                                "regexp": ".",
+                                "file": 1,
+                                "location": 2,
+                                "message": 3
+                            }
+                        ],
+                        "background": {
+                            "activeOnStart": true,
+                            "beginsPattern": "^.*Tomcat started.*",
+                            "endsPattern": "^.*Started KafkaGettingStartedApplication.*"
+                        }
+                    }
+                ]
+            },
+            {
+                "label": "Maven: Package",
+                "type": "shell",
+                "command": "mvn package",
+                "group": "build",
+                "presentation": {
+                    "echo": true,
+                    "reveal": "always",
+                    "focus": false,
+                    "panel": "shared"
+                },
+                "problemMatcher": []
+            },
+            {
+                "label": "Docker: Start Kafka",
+                "type": "shell",
+                "command": "docker-compose",
+                "args": ["-f", "src/main/resources/kafka-single-node.yml", "up", "-d"],
+                "group": "build",
+                "presentation": {
+                    "echo": true,
+                    "reveal": "always",
+                    "focus": false,
+                    "panel": "shared"
+                },
+                "problemMatcher": []
+            },
+            {
+                "label": "Docker: Stop Kafka",
+                "type": "shell",
+                "command": "docker-compose",
+                "args": ["-f", "src/main/resources/kafka-single-node.yml", "down"],
+                "group": "build",
+                "presentation": {
+                    "echo": true,
+                    "reveal": "always",
+                    "focus": false,
+                    "panel": "shared"
+                },
+                "problemMatcher": []
+            }
+        ]
+    },
+    "launch": {
+        "version": "0.2.0",
+        "configurations": [
+            {
+                "type": "java",
+                "name": "Launch KafkaGettingStartedApplication",
+                "request": "launch",
+                "mainClass": "com.learning.kafkagettingstarted.KafkaGettingStartedApplication",
+                "projectName": "kafka-getting-started",
+                "args": [],
+                "vmArgs": [],
+                "env": {
+                    "SPRING_PROFILES_ACTIVE": "dev"
+                },
+                "console": "internalConsole",
+                "stopOnEntry": false,
+                "preLaunchTask": "Maven: Compile"
+            },
+            {
+                "type": "java",
+                "name": "Debug KafkaGettingStartedApplication",
+                "request": "launch",
+                "mainClass": "com.learning.kafkagettingstarted.KafkaGettingStartedApplication",
+                "projectName": "kafka-getting-started",
+                "args": [],
+                "vmArgs": [
+                    "-Dspring.profiles.active=dev",
+                    "-Dlogging.level.org.springframework.kafka=DEBUG"
+                ],
+                "env": {},
+                "console": "internalConsole",
+                "stopOnEntry": false,
+                "preLaunchTask": "Maven: Compile"
+            },
+            {
+                "type": "java",
+                "name": "Launch KafkaSimpleProducer",
+                "request": "launch",
+                "mainClass": "com.learning.kafkagettingstarted.chapter5.KafkaSimpleProducer",
+                "projectName": "kafka-getting-started",
+                "args": [],
+                "vmArgs": [],
+                "env": {},
+                "console": "internalConsole",
+                "stopOnEntry": false,
+                "preLaunchTask": "Maven: Compile"
+            },
+            {
+                "type": "java",
+                "name": "Launch KafkaSimpleConsumer",
+                "request": "launch",
+                "mainClass": "com.learning.kafkagettingstarted.chapter5.KafkaSimpleConsumer",
+                "projectName": "kafka-getting-started",
+                "args": [],
+                "vmArgs": [],
+                "env": {},
+                "console": "internalConsole",
+                "stopOnEntry": false,
+                "preLaunchTask": "Maven: Compile"
+            }
+        ]
+    }
+}

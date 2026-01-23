@@ -1,0 +1,214 @@
+# 🚀 KAFKA LEARNING ENVIRONMENT - DOCKER COMPOSE CONFIGURATION
+# 
+# 🎯 PURPOSE: Set up a complete Kafka learning environment
+# This file tells Docker how to create and configure your Kafka "post office"
+#
+# 📚 WHAT THIS FILE DOES:
+# - Creates a Kafka message broker (the main post office)
+# - Sets up proper networking so your apps can connect
+# - Configures performance settings for learning
+# - Uses modern KRaft mode (no Zookeeper needed!)
+
+version: '3.8'  # Docker Compose file format version
+
+services:
+  # 📬 KAFKA SERVICE - The Main Message Broker
+  # This is like the central post office that handles all mail delivery
+  kafka:
+    # 🏷️ CONTAINER SETUP
+    image: 'bitnami/kafka:3.6.1'  # Official Kafka image (like downloading specific software version)
+    container_name: kafka-learning-broker  # Easy-to-remember name for your container
+    hostname: kafka  # Network name that other containers can use to find this one
+    restart: unless-stopped  # Automatically restart if it crashes (except manual stops)
+    
+    # 💻 RESOURCE LIMITS - Prevent Kafka from using all your computer's power
+    # Think of this like setting rules for how much energy the post office can use
+    deploy:
+      resources:
+        limits:
+          cpus: '4.0'      # Maximum: Use 4 CPU cores (good for learning)
+          memory: 2G       # Maximum: Use 2GB of RAM (leaves room for other apps)
+        reservations:
+          cpus: '2.0'      # Minimum: Always reserve 2 CPU cores
+          memory: 1G       # Minimum: Always reserve 1GB of RAM
+    
+    environment:
+      # 🏗️ KRAFT CONFIGURATION - Modern Kafka Setup
+      # KRaft is the new way to run Kafka (simpler, faster, more reliable)
+      - KAFKA_ENABLE_KRAFT=yes  # Use modern mode (no Zookeeper needed!)
+      - ALLOW_PLAINTEXT_LISTENER=yes  # Allow simple connections (good for learning)
+      - KAFKA_CFG_NODE_ID=1  # This Kafka instance's ID number
+      - KAFKA_CFG_PROCESS_ROLES=broker,controller  # This instance does both jobs
+      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER  # Name for internal management
+      - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=INTERNAL  # Name for broker-to-broker talk
+      
+      # 🌐 NETWORK CONFIGURATION - How apps connect to Kafka
+      # Think of this like setting up different phone lines for different purposes
+      - KAFKA_CFG_LISTENERS=INTERNAL://:29092,EXTERNAL://:9092,CONTROLLER://:9093
+      # INTERNAL:29092 = For containers to talk to each other
+      # EXTERNAL:9092 = For your Java app to connect from outside
+      # CONTROLLER:9093 = For Kafka's internal management
+      
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
+      # All connections use simple security (good for learning, not production!)
+      
+      - KAFKA_CFG_ADVERTISED_LISTENERS=INTERNAL://kafka:29092,EXTERNAL://localhost:9092
+      # Tell clients where they can find Kafka
+      # INTERNAL: Other containers use "kafka:29092"
+      # EXTERNAL: Your Java app uses "localhost:9092"
+      
+      # 🎛️ CONTROLLER CONFIGURATION - Kafka's Brain
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=1@kafka:9093
+      # This Kafka instance (ID=1) manages itself
+      
+      # 📫 TOPIC CONFIGURATION - Mailbox Rules
+      # These settings control how "mailboxes" (topics) work
+      - KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE=false  # Don't create topics automatically (good practice)
+      - KAFKA_CFG_DEFAULT_REPLICATION_FACTOR=1     # Keep 1 copy of each message (single server)
+      - KAFKA_CFG_NUM_PARTITIONS=6                 # Default: 6 sections per mailbox (good for learning)
+      - KAFKA_CFG_MIN_INSYNC_REPLICAS=1            # Need 1 copy confirmed before saying "message sent"
+      
+      # ⚡ PERFORMANCE TUNING - Make Kafka Fast
+      # These settings optimize Kafka for your computer
+      - KAFKA_CFG_NUM_NETWORK_THREADS=8            # 8 workers handling network requests
+      - KAFKA_CFG_NUM_IO_THREADS=16                # 16 workers reading/writing files
+      - KAFKA_CFG_SOCKET_SEND_BUFFER_BYTES=102400  # 100KB buffer for sending data
+      - KAFKA_CFG_SOCKET_RECEIVE_BUFFER_BYTES=102400 # 100KB buffer for receiving data
+      - KAFKA_CFG_SOCKET_REQUEST_MAX_BYTES=104857600 # Max 100MB per request
+      
+      # Log Configuration (Learning/Development Optimized)
+      - KAFKA_CFG_LOG_RETENTION_HOURS=168          # 7 days retention
+      - KAFKA_CFG_LOG_RETENTION_BYTES=1073741824   # 1GB per topic-partition
+      - KAFKA_CFG_LOG_SEGMENT_BYTES=268435456      # 256MB segments (more manageable)
+      - KAFKA_CFG_LOG_CLEANUP_POLICY=delete
+      - KAFKA_CFG_LOG_CLEANUP_INTERVAL_MS=300000   # 5 minutes
+      - KAFKA_CFG_LOG_RETENTION_CHECK_INTERVAL_MS=300000 # 5 minutes
+      
+      # Compression (Industry Best Practice)
+      - KAFKA_CFG_COMPRESSION_TYPE=snappy          # Good balance of speed/compression
+      
+      # JVM Settings (Optimized for your 7.6GB system)
+      - KAFKA_HEAP_OPTS=-Xmx1536M -Xms1536M -XX:+UseG1GC -XX:MaxGCPauseMillis=100
+      - KAFKA_JVM_PERFORMANCE_OPTS=-server -XX:+UnlockExperimentalVMOptions -XX:+UseContainerSupport
+    
+    ports:
+      - '9092:9092'  # External listener for Spring Boot app
+      - '9093:9093'  # Controller port (for management tools)
+    
+    volumes:
+      - kafka_data:/bitnami/kafka
+    
+    # 🏥 HEALTH CHECK CONFIGURATION - Monitor Kafka's Health
+    # This is like having a nurse check if the post office is working properly
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-topics.sh --bootstrap-server localhost:9092 --list || exit 1"]
+      # Test command: Try to list topics - if it works, Kafka is healthy
+      interval: 30s      # Check every 30 seconds
+      timeout: 15s       # Wait up to 15 seconds for response
+      retries: 5         # Try 5 times before declaring unhealthy
+      start_period: 45s  # Wait 45 seconds after startup before first check
+    
+    # 📝 LOGGING CONFIGURATION - Keep Track of What Happens
+    # This is like keeping a logbook of all post office activities
+    logging:
+      driver: "json-file"  # Store logs in JSON format (easy to read)
+      options:
+        max-size: "50m"    # Each log file can be up to 50 megabytes
+        max-file: "3"      # Keep last 3 log files (automatic cleanup)
+
+  # 🖥️ KAFKA UI SERVICE - Visual Management Interface
+  # This is like having a computer dashboard to see what's happening in the post office
+  kafka-ui:
+    image: provectuslabs/kafka-ui:v0.7.2  # Web interface for managing Kafka
+    container_name: kafka-learning-ui     # Easy name for the UI container
+    hostname: kafka-ui                    # Network name for the UI
+    restart: unless-stopped               # Auto-restart if it crashes
+    
+    # 💻 RESOURCE LIMITS FOR UI - Smaller than Kafka since it's just a dashboard
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'      # Max 1 CPU core (UI doesn't need much power)
+          memory: 512M     # Max 512MB RAM (lightweight web interface)
+        reservations:
+          cpus: '0.5'      # Reserve half a CPU core
+          memory: 256M     # Reserve 256MB RAM
+    
+    # 🌐 PORT MAPPING - How to access the UI from your web browser
+    ports:
+      - '8081:8080'  # Visit http://localhost:8081 to see Kafka UI
+    
+    environment:
+      # 🔧 UI CONFIGURATION
+      - DYNAMIC_CONFIG_ENABLED=true        # Allow changing settings through UI
+      - KAFKA_CLUSTERS_0_NAME=local-kafka-learning  # Display name for your Kafka
+      - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka:29092  # How UI connects to Kafka
+      - KAFKA_CLUSTERS_0_PROPERTIES_SECURITY_PROTOCOL=PLAINTEXT  # Simple security
+      - LOGGING_LEVEL_COM_PROVECTUS=DEBUG  # Show detailed logs for troubleshooting
+      - SERVER_SERVLET_CONTEXT_PATH=/      # UI available at root path
+    
+    # 🔗 DEPENDENCY - UI waits for Kafka to be healthy before starting
+    depends_on:
+      kafka:
+        condition: service_healthy  # Don't start UI until Kafka is working
+    
+    # 📝 UI LOGGING CONFIGURATION
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"  # Smaller logs for UI (10MB max)
+        max-file: "2"    # Keep last 2 log files
+    
+    # 🏷️ PROFILE - Only start UI when specifically requested
+    profiles:
+      - ui  # Use "docker-compose --profile ui up" to include this service
+
+  # 📊 KAFKA MONITORING SERVICE - Performance Metrics
+  # This is like having performance monitors to track how busy the post office is
+  kafka-exporter:
+    image: danielqsj/kafka-exporter:v1.7.0  # Tool that collects Kafka performance data
+    container_name: kafka-learning-exporter  # Easy name for monitoring container
+    hostname: kafka-exporter                 # Network name
+    restart: unless-stopped                  # Auto-restart if needed
+    
+    # 💻 RESOURCE LIMITS FOR MONITORING - Very lightweight
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'      # Max half a CPU core (monitoring is lightweight)
+          memory: 256M     # Max 256MB RAM
+    
+    # 🌐 PORT MAPPING - Where to get performance metrics
+    ports:
+      - '9308:9308'  # Metrics available at http://localhost:9308/metrics
+    
+    # 🔧 CONFIGURATION - Tell exporter how to connect to Kafka
+    command:
+      - '--kafka.server=kafka:29092'  # Connect to Kafka's internal port
+      - '--web.listen-address=0.0.0.0:9308'
+      - '--log.level=info'
+    
+    depends_on:
+      kafka:
+        condition: service_healthy
+    
+    profiles:
+      - monitoring
+
+volumes:
+  kafka_data:
+    driver: local
+    name: kafka-learning-data
+    # Add driver options for better performance
+    driver_opts:
+      type: none
+      o: bind
+      device: ${PWD}/docker-volumes/kafka-data
+
+networks:
+  default:
+    name: kafka-learning-network
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16  # Dedicated subnet for isolation

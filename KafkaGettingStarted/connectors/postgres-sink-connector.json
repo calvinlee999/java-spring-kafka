@@ -1,0 +1,15 @@
+{
+  "name": "postgres-sink-connector", 
+  "config": {
+    "connector.class": "io.confluent.connect.jdbc.JdbcSinkConnector",
+    "connection.url": "jdbc:postgresql://host.docker.internal:5432/mydata",
+    "connection.user": "cnldev",
+    "connection.password": "cnldev_123",
+    "topics": "kafka.learning.aggregated-orders",
+    "auto.create": true,
+    "auto.evolve": true,
+    "insert.mode": "insert",
+    "table.name.format": "flink_processed_orders",
+    "pk.mode": "none"
+  }
+}
