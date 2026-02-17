@@ -160,9 +160,8 @@ public class BasicKafkaFlinkJob {
                 long processingTime = System.currentTimeMillis();
                 
                 // Create processed message with additional metadata
-                String processedMessage = String.format(
-                    "PROCESSED[%d]: %s", 
-                    processingTime, 
+                String processedMessage = "PROCESSED[%d]: %s".formatted(
+                    processingTime,
                     orderMessage
                 );
                 

@@ -1,6 +1,5 @@
 package com.learning.kafkagettingstarted.chapter7;
 
-import com.learning.kafkagettingstarted.chapter4.KafkaCallBack;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;

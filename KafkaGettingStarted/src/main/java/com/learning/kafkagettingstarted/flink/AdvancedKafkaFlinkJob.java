@@ -131,8 +131,7 @@ public class AdvancedKafkaFlinkJob {
          */
         DataStream<String> mergedStream = windowedAggregates
             .map(summary -> summary.toString())
-            .union(usecaseStream)  // Simple union for demonstration
-            .name("Merge Aggregated and UseCase Streams");
+            .union(usecaseStream);  // Simple union for demonstration
 
         /*
          * OUTPUT TO KAFKA - Following course sink patterns
@@ -219,7 +218,7 @@ public class AdvancedKafkaFlinkJob {
 
         @Override
         public String toString() {
-            return String.format("OrderSummary{customer='%s', orders=%d, total=%.2f, window=[%d-%d]}", 
+            return "OrderSummary{customer='%s', orders=%d, total=%.2f, window=[%d-%d]}".formatted(
                 customerId, orderCount, totalAmount, windowStart, windowEnd);
         }
     }

@@ -74,7 +74,7 @@ public class SimpleBenchmarkRunner {
             
             for (int i = 0; i < TEST_MESSAGE_COUNT; i++) {
                 String key = "benchmark_" + i;
-                String value = String.format("Benchmark test message %d - Order data with customer info and product details", i);
+                String value = "Benchmark test message %d - Order data with customer info and product details".formatted(i);
                 
                 producer.send(new ProducerRecord<>(TOPIC, key, value));
                 

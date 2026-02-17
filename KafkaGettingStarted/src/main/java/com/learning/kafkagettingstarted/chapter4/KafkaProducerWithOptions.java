@@ -1,5 +1,6 @@
 package com.learning.kafkagettingstarted.chapter4;
 
+import com.learning.kafkagettingstarted.chapter7.UseCaseCallBack;
 import org.apache.kafka.clients.producer.*;
 import org.apache.kafka.common.record.CompressionType;
 
@@ -99,7 +100,7 @@ public class KafkaProducerWithOptions {
                 );
 
         //Send with Callback. Callback handler also has message key for context
-        optionsProducer.send(asyncRecCallBack, new KafkaCallBack(messageKey));
+        optionsProducer.send(asyncRecCallBack, new UseCaseCallBack(messageKey));
 
         System.out.println("\nSent Asynchronously with Callback :" + asyncRecCallBack);
 

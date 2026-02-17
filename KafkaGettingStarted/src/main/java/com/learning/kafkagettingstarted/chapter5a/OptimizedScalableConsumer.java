@@ -14,6 +14,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -322,11 +323,11 @@ public class OptimizedScalableConsumer {
      */
     private void simulateBusinessLogic(String message) throws Exception {
         // Simulate variable processing time (10-50ms)
-        int processingTime = 10 + (int) (Math.random() * 40);
+        int processingTime = 10 + (int) (ThreadLocalRandom.current().nextDouble() * 40);
         Thread.sleep(processingTime);
         
         // Simulate occasional failures (2% failure rate)
-        if (Math.random() < 0.02) {
+        if (ThreadLocalRandom.current().nextDouble() < 0.02) {
             throw new RuntimeException("Simulated processing failure");
         }
         

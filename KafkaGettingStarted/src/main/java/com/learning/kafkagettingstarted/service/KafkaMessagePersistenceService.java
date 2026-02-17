@@ -412,9 +412,9 @@ public class KafkaMessagePersistenceService {
 
         @Override
         public String toString() {
-            return String.format("MessageStats{total=%d, processed=%d, failed=%d, processing=%d, received=%d, success=%.2f%%, failure=%.2f%%}",
-                    totalMessages, processedMessages, failedMessages, processingMessages, receivedMessages,
-                    getSuccessRate(), getFailureRate());
+            return "MessageStats{total=%d, processed=%d, failed=%d, processing=%d, received=%d, success=%.2f%%, failure=%.2f%%}".formatted(
+                totalMessages, processedMessages, failedMessages, processingMessages, receivedMessages,
+                getSuccessRate(), getFailureRate());
         }
     }
 }

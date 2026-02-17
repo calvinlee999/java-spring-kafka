@@ -30,7 +30,7 @@ import org.slf4j.LoggerFactory;
 
 // Java imports
 import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 
@@ -296,7 +296,7 @@ public class FlinkSqlJobRunner {
         
         try {
             String scriptPath = SQL_SCRIPTS_PATH + scriptFile;
-            String sqlContent = Files.readString(Paths.get(scriptPath));
+            String sqlContent = Files.readString(Path.of(scriptPath));
             
             // Split by semicolon and execute each statement
             List<String> statements = Arrays.stream(sqlContent.split(";"))

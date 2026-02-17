@@ -278,8 +278,8 @@ class ConsumerPerformanceComparisonTest {
         try (KafkaProducer<String, String> producer = new KafkaProducer<>(producerProps)) {
             for (int i = 0; i < messageCount; i++) {
                 String key = testId + "_" + i;
-                String value = String.format("Test message %d for %s - %s", i, testId, 
-                                            "Sample order data with reasonable payload size to simulate real messages");
+                String value = "Test message %d for %s - %s".formatted(i, testId,
+                    "Sample order data with reasonable payload size to simulate real messages");
                 
                 producer.send(new ProducerRecord<>(TEST_TOPIC, key, value));
                 
